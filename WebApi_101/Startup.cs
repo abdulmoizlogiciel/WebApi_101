@@ -1,6 +1,7 @@
 //using LS.WebSocketServer;
 using LS.WebSocketServer;
 using LS.WebSocketServer.Models;
+using LS.WebSocketServer.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -17,24 +18,19 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using WebApi_101.Services;
+using WebApi_101.SocketStuff;
 using WebApi_101.Utils;
 
 namespace WebApi_101
 {
-    public class Model2
-    {
-        public int Number { get; set; } = 67;
-    }
-
     public class Startup
     {
+        public IConfiguration Configuration { get; }
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
         }
-
-        public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -55,12 +51,24 @@ namespace WebApi_101
 
             services.AddControllers();
 
-            services.AddWebSocket<TransactionalWebSocketHub>();
-            //.AddAuthentication<WebSocketUserIdProvider>();
+            // with custom options
+            services
+                .AddWebSocket<TestHub>(options =>
+                {
+                    // set minimum frequency at which to send Ping/Pong keep-alive control frames
+                    options.KeepAliveInterval = TimeSpan.FromSeconds(5);
+
+                    // set max allowed protocol buffer size in kb which used to receive and parse frames
+                    options.ReceiveBufferSize = 4;
+                });
+            // with specified authentication scheme
+            //services
+            //    .AddWebSocket<TestHub>()
+            //    .AddAuthentication<WebSocketUserIDProvider>("myscheme");
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime applicationLifetime)
         {
             if (env.IsDevelopment())
             {
@@ -73,39 +81,41 @@ namespace WebApi_101
             app.UseAuthorization();
 
             //app.MapWhen(x => x.WebSockets.IsWebSocketRequest && x.Request.Scheme.StartsWith("ws").Path.Equals("/serverws"), (app) =>
-            app.UseWebSockets(new Microsoft.AspNetCore.Builder.WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(5) });
-            
+            //app.UseWebSockets(new Microsoft.AspNetCore.Builder.WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(5) });
+
             //app.MapWhen(x => x.WebSockets.IsWebSocketRequest && x.Request.Path.Equals("/ws"), (app) =>
-            app.MapWhen(x => x.WebSockets.IsWebSocketRequest && x.Request.Path.Equals("/ws"), (app) =>
-            {
-                app.Run(async (context) =>
-                {
-                    string webSocketKey = context.Request.Headers["Sec-WebSocket-Key"].ToString();
-                    string sub = context.User.UserIdentifier();
+            //app.MapWhen(x => x.WebSockets.IsWebSocketRequest && x.Request.Path.Equals("/ws"), (app) =>
+            //{
+            //    app.Run(async (context) =>
+            //    {
+            //        string webSocketKey = context.Request.Headers["Sec-WebSocket-Key"].ToString();
+            //        string sub = context.User.UserIdentifier();
 
-                    WebSocket websocket = await context.WebSockets.AcceptWebSocketAsync();
-                    Console.WriteLine("AcceptWebSocketAsync");
+            //        WebSocket websocket = await context.WebSockets.AcceptWebSocketAsync();
+            //        Console.WriteLine("AcceptWebSocketAsync");
 
-                    var socketConnection = new SocketConnection
-                    {
-                        ConnectionId = webSocketKey,
-                        Sub = sub,
-                        WebSocket = websocket,
-                    };
-                    try
-                    {
-                        while (socketConnection.WebSocket.State == WebSocketState.Open)
-                        {
-                            await ReceiverAsync(socketConnection);
-                        }
-                    }
-                    catch (WebSocketException ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                    }
-                    Console.WriteLine("Connection broken");
-                });
-            });
+            //        var socketConnection = new SocketConnection
+            //        {
+            //            ConnectionId = webSocketKey,
+            //            Sub = sub,
+            //            WebSocket = websocket,
+            //        };
+            //        try
+            //        {
+            //            while (socketConnection.WebSocket.State == WebSocketState.Open)
+            //            {
+            //                await ReceiverAsync(socketConnection);
+            //            }
+            //        }
+            //        catch (WebSocketException ex)
+            //        {
+            //            Console.WriteLine(ex.Message);
+            //        }
+            //        Console.WriteLine("Connection broken");
+            //    });
+            //});
+
+            app.UseWebSocketsWithPattern("/ws");
 
             app.UseEndpoints(endpoints =>
             {
