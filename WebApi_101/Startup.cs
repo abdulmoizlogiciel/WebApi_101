@@ -18,6 +18,8 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using WebApi_101.Converters;
+using WebApi_101.Middlewares;
 using WebApi_101.SocketStuff;
 using WebApi_101.Utils;
 
@@ -49,7 +51,10 @@ namespace WebApi_101
 
             services.AddMemoryCache();
 
-            services.AddControllers();
+            services.AddControllers().AddJsonOptions(x =>
+            {
+                x.JsonSerializerOptions.Converters.Add(new JsonDateTimeConverter());
+            });
 
             // with custom options
             services
@@ -75,6 +80,8 @@ namespace WebApi_101
                 app.UseDeveloperExceptionPage();
                 app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
             }
+
+            app.UseMiddleware<RequestCultureMiddleware>();
 
             app.UseRouting();
             app.UseAuthentication(); // always use this before .UseAuthorization(); or u will get in a redirect-loop with identityserver.

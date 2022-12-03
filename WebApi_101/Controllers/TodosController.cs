@@ -13,6 +13,12 @@ namespace WebApi_101.Controllers
     [ApiController]
     public class TodosController : ControllerBase
     {
+        [HttpPost]
+        public ModelApiPost Post(ModelApiPost modelApiPost)
+        {
+            return modelApiPost;
+        }
+
         [HttpGet]
         public string Get()
         {
@@ -31,5 +37,10 @@ namespace WebApi_101.Controllers
         {
             return "Hello from dotnet." + id;
         }
+    }
+
+    public class ModelApiPost
+    {
+        public string Id { get; set; }
     }
 }
