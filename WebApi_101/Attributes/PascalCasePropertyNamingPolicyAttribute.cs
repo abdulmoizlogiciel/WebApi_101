@@ -9,7 +9,7 @@ using System.Text.Json;
 namespace WebApi_101.Attributes
 {
     /// <summary>
-    /// Pascal naming convention, acheived by combinig the following sources:
+    /// Pascal naming convention, achieved by combining the following sources:
     /// https://stackoverflow.com/a/52623772/8075004
     /// https://stackoverflow.com/a/64210540/8075004
     /// https://stackoverflow.com/a/59701123/8075004
